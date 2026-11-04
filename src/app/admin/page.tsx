@@ -32,6 +32,10 @@ export default function AdminPage() {
   const [isLoadingOrderDetail, setIsLoadingOrderDetail] = useState(false);
   const [manualOrderId, setManualOrderId] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [fulfillForm, setFulfillForm] = useState({ productKey: '', variantKey: '', quantity: 1 });
+  const [isFulfilling, setIsFulfilling] = useState(false);
+  const [fulfilledItems, setFulfilledItems] = useState<DeliveredItem[]>([]);
+  const [fulfillWarning, setFulfillWarning] = useState('');
 
   const fetchBalance = useCallback(async () => {
     setIsLoadingBalance(true);
@@ -84,6 +88,49 @@ export default function AdminPage() {
       toast.error(err instanceof Error ? err.message : 'Failed to retrieve order details');
     } finally {
       setIsLoadingOrderDetail(false);
+    }
+  };
+
+  const handleFulfill = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { productKey, variantKey, quantity } = fulfillForm;
+    const summary = `${quantity} x ${productKey.trim()}${variantKey.trim() ? ` / ${variantKey.trim()}` : ''}`;
+    if (!window.confirm(`¿Comprar ${summary}? Se descuenta de tu saldo de QuantumVault.`)) return;
+
+    setIsFulfilling(true);
+    setFulfilledItems([]);
+    setFulfillWarning('');
+    try {
+      const res = await fetch('/api/purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productKey: productKey.trim(),
+          variantKey: variantKey.trim() || undefined,
+          quantity,
+        }),
+      });
+      const data = await res.json();
+
+      // TIMEOUT SAFETY: the purchase may have gone through. Never re-submit.
+      if (res.status === 202) {
+        setFulfillWarning(data.message);
+        fetchOrders();
+        return;
+      }
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+
+      setFulfilledItems(data.order?.items || []);
+      if (data.order?.partial) {
+        setFulfillWarning(`Entrega parcial: ${data.order.fulfilled} de ${data.order.requested} unidades.`);
+      }
+      setFulfillForm({ productKey: '', variantKey: '', quantity: 1 });
+      fetchBalance();
+      fetchOrders();
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'No se pudo completar la compra');
+    } finally {
+      setIsFulfilling(false);
     }
   };
 
@@ -187,6 +234,90 @@ export default function AdminPage() {
           </div>
           <p className="mt-2 text-xs text-gray-400">Cost deducted from wallet</p>
         </div>
+      </div>
+
+      {/* Fulfill a paid order */}
+      <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h2 className="text-base font-bold text-gray-900 mb-1 flex items-center gap-2">
+          <ShoppingBag className="h-4 w-4 text-brand-600" /> Entregar pedido pagado
+        </h2>
+        <p className="text-xs text-gray-500 mb-4">
+          Usa los códigos entre paréntesis del mensaje del pedido. Compra solo cuando el cliente ya haya pagado.
+        </p>
+
+        <form onSubmit={handleFulfill} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_90px_auto] gap-3">
+          <input
+            type="text"
+            required
+            aria-label="Código de producto"
+            placeholder="Código de producto"
+            value={fulfillForm.productKey}
+            onChange={(e) => setFulfillForm({ ...fulfillForm, productKey: e.target.value })}
+            className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          />
+          <input
+            type="text"
+            aria-label="Código de opción (si tiene)"
+            placeholder="Código de opción (si tiene)"
+            value={fulfillForm.variantKey}
+            onChange={(e) => setFulfillForm({ ...fulfillForm, variantKey: e.target.value })}
+            className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          />
+          <input
+            type="number"
+            required
+            min={1}
+            max={50}
+            aria-label="Cantidad"
+            value={fulfillForm.quantity}
+            onChange={(e) => setFulfillForm({ ...fulfillForm, quantity: Number(e.target.value) })}
+            className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          />
+          <Button variant="primary" size="md" type="submit" isLoading={isFulfilling}>
+            Comprar
+          </Button>
+        </form>
+
+        {fulfillWarning && (
+          <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900" role="alert">
+            {fulfillWarning}
+          </p>
+        )}
+
+        {fulfilledItems.length > 0 && (
+          <div className="mt-6 space-y-4">
+            {fulfilledItems.map((item) => (
+              <div key={item.orderId} className="rounded-2xl border border-brand-200 bg-brand-50/40 p-5">
+                <h3 className="font-bold text-gray-900">{item.product}</h3>
+                <p className="text-xs text-gray-500 mb-3">Order ID: {item.orderId}</p>
+                <div className="space-y-2">
+                  {item.fields?.map((f) => (
+                    <div
+                      key={f.name}
+                      className="flex items-center justify-between gap-2 rounded-xl bg-white p-3 border border-gray-200"
+                    >
+                      <div>
+                        <p className="text-[11px] font-semibold text-gray-400 uppercase">{f.label || f.name}</p>
+                        <p className="text-sm font-mono font-medium text-gray-900 break-all">{f.value}</p>
+                      </div>
+                      <button
+                        onClick={() => handleCopy(f.value, `${item.orderId}-${f.name}`)}
+                        className="inline-flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 bg-brand-50 px-3 py-1.5 rounded-lg transition"
+                      >
+                        {copiedKey === `${item.orderId}-${f.name}` ? (
+                          <Check className="h-3.5 w-3.5" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                        Copiar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Lookup Order / Recover Delivery */}

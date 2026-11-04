@@ -13,9 +13,9 @@ export const metadata: Metadata = {
   title: `${storeName} — Premium Digital Products & Services`,
   description: 'Tu tienda digital de confianza para cuentas, herramientas de inteligencia artificial y licencias.',
   icons: {
-    icon: '/logo-icon.png',
-    shortcut: '/logo-icon.png',
-    apple: '/logo-icon.png',
+    icon: '/logo-perfil.png',
+    shortcut: '/logo-perfil.png',
+    apple: '/logo-perfil.png',
   },
 };
 
@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
-        <link rel="icon" href="/logo-icon.png" sizes="any" />
+        <link rel="icon" href="/logo-perfil.png" sizes="any" />
       </head>
       <body className={inter.className}>
         <Navbar />

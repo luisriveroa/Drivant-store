@@ -199,7 +199,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
               </div>
               <Link href="/cart" onClick={onClose}>
                 <Button variant="primary" size="lg" className="w-full">
-                  Checkout
+                  Finalizar pedido
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </Link>

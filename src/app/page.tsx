@@ -99,12 +99,12 @@ export default function HomePage() {
           <div className="mx-auto max-w-3xl text-center">
             {/* Logo Badge */}
             <div className="inline-flex items-center gap-2.5 rounded-full border border-lime-300/60 bg-lime-50/80 px-4 py-1.5 mb-6 backdrop-blur-sm dark:border-lime-900/50 dark:bg-lime-950/30">
-              <div className="relative h-4 w-4">
+              <div className="relative h-5 w-5 overflow-hidden rounded">
                 <Image
-                  src="/logo-icon.png"
+                  src="/logo-perfil.png"
                   alt="Drivant"
                   fill
-                  sizes="16px"
+                  sizes="20px"
                   className="object-contain"
                 />
               </div>
@@ -122,7 +122,7 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-4 text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-xl mx-auto leading-relaxed">
-              Outlook, Google AI, Gemini, ChatGPT, Licencias y Cuentas con entrega automatizada al instante.
+              Outlook, Google AI, Gemini, ChatGPT, Licencias y Cuentas. Arma tu carrito y coordina tu pago por WhatsApp o Telegram.
             </p>
 
             {/* Search Bar */}

@@ -3,7 +3,7 @@
 // ============================================================
 import type { MarginConfig, ApiProduct, ResaleProduct, ResaleVariant } from '@/lib/types';
 import {
-  getDefaultMargin,
+  getTieredPrice,
   productMarginOverrides,
   MIN_RESALE_PRICE,
   PRICE_DECIMALS,
@@ -29,26 +29,27 @@ export function calculateResalePrice(basePrice: number, margin: MarginConfig): n
 }
 
 /**
- * Get margin config for a specific product key.
+ * Final customer price for a supplier price: product override first, then tiers.
  */
-export function getMarginForProduct(productKey: string): MarginConfig {
+export function getResalePrice(productKey: string, basePrice: number): number {
   const override = productMarginOverrides.find((o) => o.productKey === productKey);
-  return override ? override.margin : getDefaultMargin();
+  if (override) return calculateResalePrice(basePrice, override.margin);
+  const price = Math.max(getTieredPrice(basePrice), MIN_RESALE_PRICE);
+  return parseFloat(price.toFixed(PRICE_DECIMALS));
 }
 
 /**
- * Transform an API product into a ResaleProduct, applying the margin.
+ * Transform an API product into a ResaleProduct, applying the margin to each price.
  * Ensures the wholesale price is stripped and never leaks to the frontend.
  */
 export function applyResalePricing(product: ApiProduct): ResaleProduct {
-  const margin = getMarginForProduct(product.productKey);
   const variants = product.variants || [];
 
   if (variants.length > 0) {
     const resaleVariants: ResaleVariant[] = variants.map((v) => ({
       variantKey: v.key,
       name: v.name,
-      price: calculateResalePrice(v.price, margin),
+      price: getResalePrice(product.productKey, v.price),
       stock: v.stock,
       unlimited: v.unlimited,
       inStock: v.inStock,
@@ -81,7 +82,7 @@ export function applyResalePricing(product: ApiProduct): ResaleProduct {
 
   // Simple product (no variants)
   const basePrice = product.price ?? 0;
-  const resalePrice = calculateResalePrice(basePrice, margin);
+  const resalePrice = getResalePrice(product.productKey, basePrice);
 
   return {
     productKey: product.productKey,

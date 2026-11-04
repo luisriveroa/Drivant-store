@@ -1,26 +1,43 @@
 // ============================================================
 // Margin / Pricing Configuration
 // ============================================================
-import type { MarginConfig, ProductMarginOverride } from '@/lib/types';
+import type { ProductMarginOverride } from '@/lib/types';
 
-/**
- * Default global margin applied to all products.
- * Can be overridden via the DEFAULT_MARGIN_PERCENT env var.
- */
-export function getDefaultMargin(): MarginConfig {
-  const envPercent = process.env.DEFAULT_MARGIN_PERCENT;
-  if (envPercent) {
-    const parsed = parseFloat(envPercent);
-    if (!isNaN(parsed)) {
-      return { type: 'percentage', value: parsed };
-    }
-  }
-  // Fallback: 30% markup
-  return { type: 'percentage', value: 30 };
+export interface MarginTier {
+  upTo: number;
+  percent: number;
 }
 
 /**
- * Per-product margin overrides.
+ * Automatic margin by supplier price. The first tier whose `upTo` is above the
+ * supplier price applies. Edit these numbers to change prices across the store.
+ *
+ * Example: a product the API sells at $10 falls in the "upTo: 20" tier
+ *   → $10 + 35% = $13.50
+ */
+export const MARGIN_TIERS: MarginTier[] = [
+  { upTo: 1, percent: 100 },
+  { upTo: 5, percent: 50 },
+  { upTo: 20, percent: 35 },
+  { upTo: Infinity, percent: 25 },
+];
+
+/**
+ * Applies the tier margin to a supplier price. Never returns less than the top
+ * price of the previous tier, so a dearer product can't end up cheaper to the
+ * customer just because it crossed into a tier with a lower percentage.
+ */
+export function getTieredPrice(basePrice: number): number {
+  const index = MARGIN_TIERS.findIndex((t) => basePrice < t.upTo);
+  const tier = MARGIN_TIERS[index];
+  const price = basePrice * (1 + tier.percent / 100);
+  if (index === 0) return price;
+  const previous = MARGIN_TIERS[index - 1];
+  return Math.max(price, previous.upTo * (1 + previous.percent / 100));
+}
+
+/**
+ * Per-product margin overrides. These win over MARGIN_TIERS.
  * Add entries here to set custom margins for specific products.
  *
  * Example:

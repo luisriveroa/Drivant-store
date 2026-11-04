@@ -151,7 +151,7 @@ export default function ProductDetailPage({
 
           <div className="prose prose-sm text-gray-600 mb-6">
             <p className="whitespace-pre-line leading-relaxed">
-              {product.description || 'Instant digital delivery upon successful purchase.'}
+              {product.description || 'Entrega digital al confirmar tu pago.'}
             </p>
           </div>
 
@@ -160,7 +160,7 @@ export default function ProductDetailPage({
             <div className="mb-6 rounded-2xl border border-brand-100 bg-brand-50/50 p-4">
               <div className="flex items-center gap-2 text-brand-900 font-semibold text-sm mb-2">
                 <PackageCheck className="h-4 w-4 text-brand-600" />
-                Delivered Goods Upon Purchase:
+                Recibirás al confirmar tu pago:
               </div>
               <ul className="space-y-1">
                 {product.deliverFields.map((field, idx) => (

@@ -16,7 +16,7 @@ Plataforma e-commerce moderna desarrollada en **Next.js 14 (App Router)**, **Typ
    - Detección de `deliverFields` para informar al cliente exactamente qué datos recibirá tras la compra.
 
 3. **Módulo de Margen / Sobreprecio Configurable**:
-   - Margen global por porcentaje (por defecto **+30%**) o monto fijo mediante `DEFAULT_MARGIN_PERCENT`.
+   - Margen automático por rango de precio mayorista, en `MARGIN_TIERS` de `src/config/margins.ts`.
    - Sobrescritura personalizada por producto en `src/config/margins.ts`.
 
 4. **Protección Anti-Duplicación por Timeout (Idempotencia)**:
@@ -104,8 +104,6 @@ QUANTUMVAULT_API_KEY=qv_live_tu_api_key_aqui
 # URL base oficial de la API
 QUANTUMVAULT_BASE_URL=https://www.quantumvault.me/api/v1
 
-# Margen de ganancia en porcentaje (ej: 30 = +30% sobre el precio mayorista)
-DEFAULT_MARGIN_PERCENT=30
 
 # Nombre de tu tienda
 NEXT_PUBLIC_STORE_NAME=MiTiendaDigital
@@ -124,12 +122,17 @@ Accede al panel de administración en [http://localhost:3000/admin](http://local
 
 Puedes ajustar los márgenes de dos formas:
 
-1. **Globalmente** en tu archivo `.env.local`:
-   ```env
-   DEFAULT_MARGIN_PERCENT=40  # Todos los productos tendrán un 40% de sobreprecio
+1. **Automáticamente por rango de precio** en `MARGIN_TIERS` de `src/config/margins.ts`:
+   ```typescript
+   export const MARGIN_TIERS: MarginTier[] = [
+     { upTo: 1, percent: 100 },        // menos de $1: +100%
+     { upTo: 5, percent: 50 },         // $1 a $4.99: +50%
+     { upTo: 20, percent: 35 },        // $5 a $19.99: +35%
+     { upTo: Infinity, percent: 25 },  // $20 o más: +25%
+   ];
    ```
 
-2. **Por producto específico** en `src/config/margins.ts`:
+2. **Por producto específico** (tiene prioridad sobre los rangos) en `src/config/margins.ts`:
    ```typescript
    export const productMarginOverrides: ProductMarginOverride[] = [
      // Agregar monto fijo de $0.20 al correo Outlook:
@@ -160,6 +163,8 @@ Next.js está optimizado de forma nativa para Vercel:
 4. En la sección **Environment Variables**, agrega:
    - `QUANTUMVAULT_API_KEY`: `qv_live_...`
    - `QUANTUMVAULT_BASE_URL`: `https://www.quantumvault.me/api/v1`
-   - `DEFAULT_MARGIN_PERCENT`: `30`
    - `NEXT_PUBLIC_STORE_NAME`: `El nombre de tu tienda`
+   - `ADMIN_PASSWORD`: contraseña larga para `/admin` (usuario `admin`). Sin ella, el panel queda bloqueado.
+   - `NEXT_PUBLIC_WHATSAPP_NUMBER` y `NEXT_PUBLIC_TELEGRAM_USERNAME` (opcional): cambian los canales de pedidos definidos en `src/app/cart/page.tsx`.
+   - `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` (opcional): aviso de cada pedido nuevo con el total verificado por el servidor.
 5. Haz clic en **Deploy**. En menos de 2 minutos tu tienda estará online en `https://tu-tienda.vercel.app`.
