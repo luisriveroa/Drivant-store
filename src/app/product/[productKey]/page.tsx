@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, use } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -25,10 +25,10 @@ import type { ResaleProduct, ResaleVariant } from '@/lib/types';
 export default function ProductDetailPage({
   params,
 }: {
-  params: Promise<{ productKey: string }>;
+  params: { productKey: string };
 }) {
   const router = useRouter();
-  const { productKey } = use(params);
+  const productKey = params?.productKey || '';
 
   const [product, setProduct] = useState<ResaleProduct | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ResaleVariant | null>(null);
