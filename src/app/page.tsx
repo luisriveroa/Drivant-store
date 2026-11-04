@@ -1,17 +1,17 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
-import { Search, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw, Sparkles } from 'lucide-react';
 import ProductGrid from '@/components/ProductGrid';
+import BrandFilterBar, { BrandFilterOption, POPULAR_BRANDS } from '@/components/BrandFilterBar';
 import type { ResaleProduct } from '@/lib/types';
 
 const storeName = process.env.NEXT_PUBLIC_STORE_NAME || 'Drivant Store';
 
 export default function HomePage() {
   const [products, setProducts] = useState<ResaleProduct[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedBrand, setSelectedBrand] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -21,21 +21,17 @@ export default function HomePage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-    }, 300);
+    }, 250);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Fetch products
+  // Fetch all products
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const params = new URLSearchParams();
-      if (debouncedSearch) params.set('search', debouncedSearch);
-      if (selectedCategory) params.set('category', selectedCategory);
-
-      const res = await fetch(`/api/products?${params.toString()}`);
+      const res = await fetch('/api/products');
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
@@ -44,121 +40,150 @@ export default function HomePage() {
 
       const fetchedProducts: ResaleProduct[] = data.products || [];
       setProducts(fetchedProducts);
-
-      // Extract unique categories
-      if (!selectedCategory && !debouncedSearch && fetchedProducts.length > 0) {
-        const uniqueCategories = Array.from(
-          new Set(fetchedProducts.map((p) => p.category).filter(Boolean))
-        ) as string[];
-        setCategories(uniqueCategories);
-      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
-  }, [debouncedSearch, selectedCategory]);
+  }, []);
 
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
 
-  return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-black text-white border-b border-gray-800">
-        {/* Subtle orange accent glow matching Drivant palette */}
-        <div className="absolute top-0 right-1/4 h-80 w-80 rounded-full bg-orange-600/15 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/4 h-80 w-80 rounded-full bg-blue-600/10 blur-3xl pointer-events-none" />
+  // Filter products by selected brand and search query
+  const filteredProducts = useMemo(() => {
+    let result = products;
 
-        <div className="relative container-main py-16 sm:py-20 lg:py-24">
-          <div className="mx-auto max-w-2xl text-center">
-            {/* Logo in Hero */}
-            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 p-2.5 backdrop-blur-md border border-white/10 shadow-xl">
-              <div className="relative h-full w-full">
+    // Filter by Brand
+    if (selectedBrand !== 'all') {
+      const brandOption = POPULAR_BRANDS.find((b) => b.id === selectedBrand);
+      if (brandOption && brandOption.query) {
+        const q = brandOption.query.toLowerCase();
+        result = result.filter(
+          (p) =>
+            p.name.toLowerCase().includes(q) ||
+            p.productKey.toLowerCase().includes(q) ||
+            p.description.toLowerCase().includes(q)
+        );
+      }
+    }
+
+    // Filter by text search
+    if (debouncedSearch.trim()) {
+      const sq = debouncedSearch.toLowerCase().trim();
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(sq) ||
+          p.productKey.toLowerCase().includes(sq) ||
+          p.description.toLowerCase().includes(sq)
+      );
+    }
+
+    return result;
+  }, [products, selectedBrand, debouncedSearch]);
+
+  const handleSelectBrand = (brand: BrandFilterOption) => {
+    setSelectedBrand(brand.id);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#fafaf9] dark:bg-[#0c0d10]">
+      {/* Hero Section — Clean White & Lime Green Theme */}
+      <div className="relative overflow-hidden border-b border-gray-200/80 bg-white dark:border-gray-800 dark:bg-[#0f1115]">
+        {/* Ambient Lime Neon Glow */}
+        <div className="absolute top-0 right-1/4 h-96 w-96 rounded-full bg-lime-300/20 blur-[100px] pointer-events-none dark:bg-lime-400/10" />
+        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-lime-400/15 blur-[80px] pointer-events-none" />
+
+        <div className="relative container-main py-14 sm:py-18 lg:py-20">
+          <div className="mx-auto max-w-3xl text-center">
+            {/* Logo Badge */}
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-lime-300/60 bg-lime-50/80 px-4 py-1.5 mb-6 backdrop-blur-sm dark:border-lime-900/50 dark:bg-lime-950/30">
+              <div className="relative h-4 w-4">
                 <Image
                   src="/logo-icon.png"
                   alt="Drivant"
                   fill
+                  sizes="16px"
                   className="object-contain"
-                  priority
                 />
               </div>
+              <span className="text-xs font-bold text-gray-900 dark:text-lime-300">
+                Drivant Store — Catálogo Oficial
+              </span>
+              <Sparkles className="h-3.5 w-3.5 text-lime-600 dark:text-lime-400" />
             </div>
 
-            <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl">
-              {storeName}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-gray-950 dark:text-white">
+              Cuentas y Herramientas <br />
+              <span className="bg-gradient-to-r from-lime-500 via-lime-600 to-emerald-600 bg-clip-text text-transparent">
+                Digitales Premium
+              </span>
             </h1>
-            <p className="mt-3 text-base text-gray-300 sm:text-lg">
-              Cuentas Premium, Herramientas de IA y Productos Digitales con Entrega Instantánea
+
+            <p className="mt-4 text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-xl mx-auto leading-relaxed">
+              Outlook, Google AI, Gemini, ChatGPT, Licencias y Cuentas con entrega automatizada al instante.
             </p>
 
             {/* Search Bar */}
-            <div className="mt-8 mx-auto max-w-lg">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <div className="mt-8 mx-auto max-w-xl">
+              <div className="relative flex items-center shadow-lg shadow-gray-200/50 dark:shadow-none rounded-2xl">
+                <Search className="absolute left-4.5 h-5 w-5 text-gray-400 pointer-events-none" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar Outlook, Gemini, ChatGPT, Licencias..."
-                  className="w-full rounded-2xl border border-gray-700 bg-gray-900/90 py-3.5 pl-12 pr-4 text-sm text-white placeholder-gray-400 shadow-xl backdrop-blur-md transition-all focus:border-orange-500 focus:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500/30"
+                  placeholder="Buscar por nombre (ej: Outlook, Gemini, 12 Months, Canva)..."
+                  className="w-full rounded-2xl border border-gray-200 bg-white py-4 pl-12 pr-4 text-sm font-medium text-gray-900 placeholder-gray-400 transition-all focus:border-lime-500 focus:outline-none focus:ring-4 focus:ring-lime-400/20 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
                 />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-4 text-xs font-semibold text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  >
+                    Limpiar
+                  </button>
+                )}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="container-main py-8 sm:py-10">
-        {/* Category Filter Bar */}
-        {categories.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              <button
-                onClick={() => setSelectedCategory('')}
-                className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${
-                  selectedCategory === ''
-                    ? 'bg-orange-600 text-white shadow-sm'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                }`}
-              >
-                Todos los Productos
-              </button>
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${
-                    selectedCategory === category
-                      ? 'bg-orange-600 text-white shadow-sm'
-                      : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
+      {/* Main Content Area */}
+      <div className="container-main py-10">
+        {/* Brand Filter Bar with Logos */}
+        <div className="flex flex-col gap-2 mb-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              Filtrar por Marca o Servicio:
+            </h2>
+            <span className="text-xs font-semibold text-gray-400">
+              {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'}
+            </span>
           </div>
-        )}
+          <BrandFilterBar
+            selectedBrand={selectedBrand}
+            onSelectBrand={handleSelectBrand}
+          />
+        </div>
 
         {/* Error State */}
         {error && (
           <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
-            <p className="text-sm font-medium text-red-800">{error}</p>
+            <p className="text-sm font-semibold text-red-800">{error}</p>
             <button
               onClick={fetchProducts}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white hover:bg-red-700 transition"
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="h-3.5 w-3.5" />
               Reintentar
             </button>
           </div>
         )}
 
         {/* Product Grid */}
-        <ProductGrid products={products} isLoading={isLoading} />
+        <ProductGrid products={filteredProducts} isLoading={isLoading} />
       </div>
     </div>
   );

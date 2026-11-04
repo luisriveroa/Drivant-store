@@ -18,6 +18,7 @@ import { useCartStore } from '@/hooks/useCart';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
+import ProductBrandIcon, { detectBrand } from '@/components/ProductBrandIcon';
 import { toast } from 'sonner';
 import type { ResaleProduct, ResaleVariant } from '@/lib/types';
 
@@ -119,13 +120,29 @@ export default function ProductDetailPage({
       <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
         {/* Left Column: Details */}
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Badge variant="info">{product.category || 'Digital'}</Badge>
-            {inStock ? (
-              <Badge variant="success">In Stock</Badge>
-            ) : (
-              <Badge variant="danger">Out of Stock</Badge>
-            )}
+          {/* Brand Icon & Category Header */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white border border-gray-200 p-2.5 shadow-sm">
+              <ProductBrandIcon
+                productKey={product.productKey}
+                name={product.name}
+                category={product.category}
+                size="lg"
+              />
+            </div>
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-lime-600">
+                {detectBrand(`${product.productKey} ${product.name}`).label}
+              </span>
+              <div className="flex items-center gap-2 mt-0.5">
+                <Badge variant="info">{product.category || 'Digital'}</Badge>
+                {inStock ? (
+                  <Badge variant="success">In Stock</Badge>
+                ) : (
+                  <Badge variant="danger">Out of Stock</Badge>
+                )}
+              </div>
+            </div>
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight mb-4">
