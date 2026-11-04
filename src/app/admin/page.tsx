@@ -106,10 +106,10 @@ export default function AdminPage() {
             <ArrowLeft className="h-3.5 w-3.5" /> Back to Storefront
           </Link>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-            Reseller Administration Panel
+            Drivant Store — Panel de Administración
           </h1>
           <p className="text-xs text-gray-500 mt-1">
-            Private back-office connected to QuantumVault Store API
+            Back-office privado conectado a QuantumVault Store API
           </p>
         </div>
 

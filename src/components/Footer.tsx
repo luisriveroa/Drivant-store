@@ -1,42 +1,37 @@
-import React from 'react';
-import Link from 'next/link';
-import { Zap } from 'lucide-react';
+import Image from 'next/image';
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear();
+  const year = new Date().getFullYear();
+  const storeName = process.env.NEXT_PUBLIC_STORE_NAME || 'Drivant Store';
 
   return (
-    <footer className="border-t border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-950">
+    <footer className="border-t border-gray-200 bg-white">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-          {/* Branding */}
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <Zap className="h-4 w-4 text-brand-600" />
-            <span>
-              Powered by{' '}
-              <span className="font-semibold text-gray-700 dark:text-gray-300">
-                QuantumStore
-              </span>
+          <div className="flex items-center gap-2.5">
+            <div className="relative h-6 w-6">
+              <Image
+                src="/logo-icon.png"
+                alt="Drivant"
+                fill
+                className="object-contain"
+              />
+            </div>
+            <span className="text-sm font-semibold text-gray-700">
+              &copy; {year} {storeName}. Todos los derechos reservados.
             </span>
-            <span className="mx-1">·</span>
-            <span>&copy; {currentYear}</span>
           </div>
-
-          {/* Links */}
-          <nav className="flex items-center gap-6">
-            <Link
-              href="/terms"
-              className="text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-            >
-              Terms
-            </Link>
-            <Link
-              href="/privacy"
-              className="text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-            >
-              Privacy
-            </Link>
-          </nav>
+          <div className="flex gap-6 text-xs font-medium text-gray-500">
+            <a href="#" className="transition-colors hover:text-orange-600">
+              Términos de Servicio
+            </a>
+            <a href="#" className="transition-colors hover:text-orange-600">
+              Garantía y Entrega
+            </a>
+            <a href="#" className="transition-colors hover:text-orange-600">
+              Soporte
+            </a>
+          </div>
         </div>
       </div>
     </footer>
