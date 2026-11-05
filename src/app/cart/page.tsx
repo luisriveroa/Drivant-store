@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { useCartStore } from '@/hooks/useCart';
 import Button from '@/components/ui/Button';
+import ProductBrandIcon from '@/components/ProductBrandIcon';
+import { detectBrand } from '@/lib/brands';
 
 type Channel = 'whatsapp' | 'telegram';
 
@@ -180,7 +182,12 @@ export default function CartPage() {
                 key={`${item.productKey}-${item.variantKey || 'std'}`}
                 className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
               >
-                <div className="flex-1">
+                <div className="flex flex-1 items-start gap-3">
+                  <ProductBrandIcon
+                    logo={detectBrand(item.productName).logo ? `/brands/${detectBrand(item.productName).logo}` : null}
+                    brandName={detectBrand(item.productName).name}
+                  />
+                  <div>
                   <h3 className="font-semibold text-gray-900 text-base">{item.productName}</h3>
                   {item.variantName && (
                     <p className="text-xs text-gray-500 mt-0.5">Opción: {item.variantName}</p>
@@ -188,6 +195,7 @@ export default function CartPage() {
                   <p className="text-sm font-bold text-gray-700 mt-1">
                     ${item.resalePrice.toFixed(2)} USD c/u
                   </p>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-4 self-end sm:self-center">

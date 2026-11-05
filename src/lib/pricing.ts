@@ -8,6 +8,7 @@ import {
   MIN_RESALE_PRICE,
   PRICE_DECIMALS,
 } from '@/config/margins';
+import { describeProduct, translateTerms } from '@/lib/product-info';
 
 /**
  * Calculate the resale price given a base price and margin config.
@@ -38,6 +39,33 @@ export function getResalePrice(productKey: string, basePrice: number): number {
   return parseFloat(price.toFixed(PRICE_DECIMALS));
 }
 
+const FIELD_LABELS: Record<string, string> = {
+  email: 'Correo',
+  password: 'Contraseña',
+  activation_url: 'Enlace de activación',
+  cdk_code: 'Código de activación',
+  code: 'Código',
+  key: 'Clave',
+};
+
+/** Spanish presentation, shared by products with and without variants. Supplier text stays out. */
+function presentProduct(product: ApiProduct) {
+  const described = describeProduct(product.productKey, product.name, product.warranty?.durationDays);
+  return {
+    name: described.name,
+    description: described.summary,
+    category: described.categoryName,
+    categoryId: described.categoryId,
+    brandId: described.brandId,
+    brandName: described.brandName,
+    logo: described.logo,
+    info: described.info,
+    searchText: described.searchText,
+    deliverFields: product.deliverFields?.map((f) => ({ name: f.name, label: FIELD_LABELS[f.name] || f.label })),
+    warranty: product.warranty ? { durationDays: product.warranty.durationDays, details: '' } : null,
+  };
+}
+
 /**
  * Transform an API product into a ResaleProduct, applying the margin to each price.
  * Ensures the wholesale price is stripped and never leaks to the frontend.
@@ -48,13 +76,12 @@ export function applyResalePricing(product: ApiProduct): ResaleProduct {
   if (variants.length > 0) {
     const resaleVariants: ResaleVariant[] = variants.map((v) => ({
       variantKey: v.key,
-      name: v.name,
+      name: translateTerms(v.name),
       price: getResalePrice(product.productKey, v.price),
       stock: v.stock,
       unlimited: v.unlimited,
       inStock: v.inStock,
-      description: v.description,
-      warranty: v.warranty,
+      warranty: v.warranty ? { durationDays: v.warranty.durationDays, details: '' } : null,
     }));
 
     const prices = resaleVariants.map((v) => v.price);
@@ -63,9 +90,8 @@ export function applyResalePricing(product: ApiProduct): ResaleProduct {
     const totalStock = resaleVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
 
     return {
+      ...presentProduct(product),
       productKey: product.productKey,
-      name: product.name,
-      description: product.description || '',
       currency: product.currency || 'USD',
       minPrice,
       maxPrice,
@@ -73,10 +99,7 @@ export function applyResalePricing(product: ApiProduct): ResaleProduct {
       resaleMaxPrice: maxPrice,
       totalStock,
       inStock: product.inStock,
-      category: product.category || 'Digital',
       variants: resaleVariants,
-      deliverFields: product.deliverFields,
-      warranty: product.warranty,
     };
   }
 
@@ -85,9 +108,8 @@ export function applyResalePricing(product: ApiProduct): ResaleProduct {
   const resalePrice = getResalePrice(product.productKey, basePrice);
 
   return {
+    ...presentProduct(product),
     productKey: product.productKey,
-    name: product.name,
-    description: product.description || '',
     currency: product.currency || 'USD',
     minPrice: resalePrice,
     maxPrice: resalePrice,
@@ -95,10 +117,7 @@ export function applyResalePricing(product: ApiProduct): ResaleProduct {
     resaleMaxPrice: resalePrice,
     totalStock: product.stock ?? (product.unlimited ? 999 : 0),
     inStock: product.inStock,
-    category: product.category || 'Digital',
     variants: [],
-    deliverFields: product.deliverFields,
-    warranty: product.warranty,
   };
 }
 

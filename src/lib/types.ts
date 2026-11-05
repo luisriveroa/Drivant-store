@@ -168,6 +168,18 @@ export interface ResaleVariant {
   } | null;
 }
 
+/** The same Spanish structure for every product. */
+export interface ProductInfo {
+  duration: string;
+  warranty: string;
+  delivery: string;
+  includes: string[];
+  steps: string[];
+  notes: string[];
+  /** False when the supplier gave no conditions to translate. */
+  hasDetails: boolean;
+}
+
 export interface ResaleProduct {
   productKey: string;
   name: string;
@@ -180,6 +192,12 @@ export interface ResaleProduct {
   totalStock: number;
   inStock: boolean;
   category: string;
+  categoryId: string;
+  brandId: string;
+  brandName: string;
+  logo: string | null;
+  info: ProductInfo;
+  searchText: string;
   variants: ResaleVariant[];
   deliverFields?: DeliverFieldDescriptor[];
   warranty?: {

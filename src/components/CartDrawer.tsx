@@ -5,10 +5,19 @@ import { X, Plus, Minus, Trash2, ShoppingCart, ChevronRight } from 'lucide-react
 import Link from 'next/link';
 import { useCartStore } from '@/hooks/useCart';
 import Button from '@/components/ui/Button';
+import ProductBrandIcon from '@/components/ProductBrandIcon';
+import { detectBrand } from '@/lib/brands';
 
 interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+function CartItemLogo({ name }: { name: string }) {
+  const brand = detectBrand(name);
+  return (
+    <ProductBrandIcon logo={brand.logo ? `/brands/${brand.logo}` : null} brandName={brand.name} size="lg" />
+  );
 }
 
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
@@ -55,7 +64,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             <div className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5 text-gray-700 dark:text-gray-300" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Your Cart
+                Tu carrito
               </h2>
               {itemCount > 0 && (
                 <span className="flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-600 px-1.5 text-[11px] font-bold text-white">
@@ -66,7 +75,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             <button
               onClick={onClose}
               className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-              aria-label="Close cart"
+              aria-label="Cerrar carrito"
             >
               <X className="h-5 w-5" />
             </button>
@@ -80,10 +89,10 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   <ShoppingCart className="h-8 w-8 text-gray-400 dark:text-gray-500" />
                 </div>
                 <h3 className="mt-4 text-base font-semibold text-gray-900 dark:text-white">
-                  Your cart is empty
+                  Tu carrito está vacío
                 </h3>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Browse products and add items to get started.
+                  Explora el catálogo y agrega productos.
                 </p>
                 <Button
                   variant="secondary"
@@ -91,7 +100,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   className="mt-4"
                   onClick={onClose}
                 >
-                  Continue Shopping
+                  Seguir comprando
                 </Button>
               </div>
             ) : (
@@ -101,22 +110,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     key={`${item.productKey}-${item.variantKey}`}
                     className="flex gap-4 rounded-xl border border-gray-100 bg-gray-50/50 p-4 dark:border-gray-800 dark:bg-gray-900/50"
                   >
-                    {/* Item icon placeholder */}
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-950">
-                      <svg
-                        className="h-6 w-6 text-brand-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.5}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                        />
-                      </svg>
-                    </div>
+                    <CartItemLogo name={item.productName} />
 
                     {/* Item details */}
                     <div className="flex flex-1 flex-col min-w-0">
@@ -134,7 +128,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                         <button
                           onClick={() => removeItem(item.productKey, item.variantKey)}
                           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
-                          aria-label={`Remove ${item.productName}`}
+                          aria-label={`Quitar ${item.productName}`}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -152,7 +146,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                               )
                             }
                             className="flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
-                            aria-label="Decrease quantity"
+                            aria-label="Quitar una unidad"
                           >
                             <Minus className="h-3.5 w-3.5" />
                           </button>
@@ -168,7 +162,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                               )
                             }
                             className="flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 text-gray-600 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
-                            aria-label="Increase quantity"
+                            aria-label="Agregar una unidad"
                           >
                             <Plus className="h-3.5 w-3.5" />
                           </button>
@@ -191,7 +185,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             <div className="border-t border-gray-200 px-6 py-4 dark:border-gray-800">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  Subtotal
+                  Total
                 </span>
                 <span className="text-lg font-bold text-gray-900 dark:text-white">
                   ${total.toFixed(2)}

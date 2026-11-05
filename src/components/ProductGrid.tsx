@@ -8,6 +8,8 @@ import type { ResaleProduct } from '@/lib/types';
 interface ProductGridProps {
   products: ResaleProduct[];
   isLoading: boolean;
+  /** The catalog failed to load: the page already explains it. */
+  hideEmptyState?: boolean;
 }
 
 function SkeletonCard() {
@@ -43,7 +45,7 @@ function SkeletonCard() {
   );
 }
 
-export default function ProductGrid({ products, isLoading }: ProductGridProps) {
+export default function ProductGrid({ products, isLoading, hideEmptyState = false }: ProductGridProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -54,6 +56,8 @@ export default function ProductGrid({ products, isLoading }: ProductGridProps) {
     );
   }
 
+  if (hideEmptyState) return null;
+
   if (!products || products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 px-6 py-20 text-center dark:border-gray-800 dark:bg-gray-900/50">
@@ -61,11 +65,10 @@ export default function ProductGrid({ products, isLoading }: ProductGridProps) {
           <Package className="h-8 w-8 text-gray-400 dark:text-gray-500" />
         </div>
         <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
-          No products found
+          No encontramos productos
         </h3>
         <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400 max-w-sm">
-          There are no products to display right now. Check back later or try
-          adjusting your search filters.
+          Prueba con otra búsqueda o limpia los filtros.
         </p>
       </div>
     );

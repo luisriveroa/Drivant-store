@@ -4,13 +4,15 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { Search, RefreshCw, Sparkles } from 'lucide-react';
 import ProductGrid from '@/components/ProductGrid';
-import BrandFilterBar, { BrandFilterOption, POPULAR_BRANDS } from '@/components/BrandFilterBar';
+import BrandFilterBar from '@/components/BrandFilterBar';
+import { normalizeForSearch } from '@/lib/search';
 import type { ResaleProduct } from '@/lib/types';
 
 const storeName = process.env.NEXT_PUBLIC_STORE_NAME || 'Drivant Store';
 
 export default function HomePage() {
   const [products, setProducts] = useState<ResaleProduct[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedBrand, setSelectedBrand] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -35,13 +37,13 @@ export default function HomePage() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(data.error || `Failed to fetch products (${res.status})`);
+        throw new Error('No pudimos cargar el catálogo. Intenta de nuevo en unos minutos.');
       }
 
       const fetchedProducts: ResaleProduct[] = data.products || [];
       setProducts(fetchedProducts);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      setError(err instanceof Error ? err.message : 'No pudimos cargar el catálogo.');
     } finally {
       setIsLoading(false);
     }
@@ -51,40 +53,38 @@ export default function HomePage() {
     fetchProducts();
   }, [fetchProducts]);
 
-  // Filter products by selected brand and search query
+  // Every word typed must appear, in any order, ignoring accents and capitals
+  const searchedProducts = useMemo(() => {
+    const words = normalizeForSearch(debouncedSearch)
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((word) => (word.length > 3 ? word.replace(/s$/, '') : word));
+    return products.filter((p) => words.every((word) => p.searchText.includes(word)));
+  }, [products, debouncedSearch]);
+
   const filteredProducts = useMemo(() => {
-    let result = products;
+    const result = searchedProducts.filter(
+      (p) =>
+        (selectedCategory === 'all' || p.categoryId === selectedCategory) &&
+        (selectedBrand === 'all' || p.brandId === selectedBrand)
+    );
+    // Available products first, in a stable order
+    return [...result].sort(
+      (a, b) => Number(b.inStock) - Number(a.inStock) || a.brandName.localeCompare(b.brandName) || a.minPrice - b.minPrice
+    );
+  }, [searchedProducts, selectedCategory, selectedBrand]);
 
-    // Filter by Brand
-    if (selectedBrand !== 'all') {
-      const brandOption = POPULAR_BRANDS.find((b) => b.id === selectedBrand);
-      if (brandOption && brandOption.query) {
-        const q = brandOption.query.toLowerCase();
-        result = result.filter(
-          (p) =>
-            p.name.toLowerCase().includes(q) ||
-            p.productKey.toLowerCase().includes(q) ||
-            p.description.toLowerCase().includes(q)
-        );
-      }
-    }
+  const hasActiveFilters = Boolean(searchQuery) || selectedCategory !== 'all' || selectedBrand !== 'all';
 
-    // Filter by text search
-    if (debouncedSearch.trim()) {
-      const sq = debouncedSearch.toLowerCase().trim();
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(sq) ||
-          p.productKey.toLowerCase().includes(sq) ||
-          p.description.toLowerCase().includes(sq)
-      );
-    }
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('all');
+    setSelectedBrand('all');
+  };
 
-    return result;
-  }, [products, selectedBrand, debouncedSearch]);
-
-  const handleSelectBrand = (brand: BrandFilterOption) => {
-    setSelectedBrand(brand.id);
+  const handleSelectCategory = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    setSelectedBrand('all');
   };
 
   return (
@@ -122,7 +122,7 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-4 text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-xl mx-auto leading-relaxed">
-              Outlook, Google AI, Gemini, ChatGPT, Licencias y Cuentas. Arma tu carrito y coordina tu pago por WhatsApp o Telegram.
+              Streaming, inteligencia artificial, diseño y productividad. Arma tu carrito y coordina tu pago por WhatsApp o Telegram.
             </p>
 
             {/* Search Bar */}
@@ -133,7 +133,8 @@ export default function HomePage() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar por nombre (ej: Outlook, Gemini, 12 Months, Canva)..."
+                  aria-label="Buscar productos"
+                  placeholder="Busca por marca, plan o duración (ej.: Canva, Gemini, 12 meses)"
                   className="w-full rounded-2xl border border-gray-200 bg-white py-4 pl-12 pr-4 text-sm font-medium text-gray-900 placeholder-gray-400 transition-all focus:border-lime-500 focus:outline-none focus:ring-4 focus:ring-lime-400/20 dark:border-gray-800 dark:bg-gray-900 dark:text-white"
                 />
                 {searchQuery && (
@@ -152,20 +153,29 @@ export default function HomePage() {
 
       {/* Main Content Area */}
       <div className="container-main py-10">
-        {/* Brand Filter Bar with Logos */}
-        <div className="flex flex-col gap-2 mb-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              Filtrar por Marca o Servicio:
-            </h2>
-            <span className="text-xs font-semibold text-gray-400">
-              {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'}
-            </span>
-          </div>
+        {/* Category and brand filters */}
+        <div className="mb-6">
           <BrandFilterBar
+            products={searchedProducts}
+            selectedCategory={selectedCategory}
             selectedBrand={selectedBrand}
-            onSelectBrand={handleSelectBrand}
+            onSelectCategory={handleSelectCategory}
+            onSelectBrand={setSelectedBrand}
           />
+          <div className="mt-5 flex items-center justify-between border-t border-gray-200 pt-4 dark:border-gray-800">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300" aria-live="polite">
+              {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'}
+            </p>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-sm font-semibold text-lime-700 hover:underline dark:text-lime-400"
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Error State */}
@@ -183,7 +193,7 @@ export default function HomePage() {
         )}
 
         {/* Product Grid */}
-        <ProductGrid products={filteredProducts} isLoading={isLoading} />
+        <ProductGrid products={filteredProducts} isLoading={isLoading} hideEmptyState={Boolean(error)} />
       </div>
     </div>
   );
