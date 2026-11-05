@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getQuantumClient, QuantumVaultTimeoutError, QuantumVaultApiError } from '@/lib/quantum-client';
 import { applyResalePricing } from '@/lib/pricing';
-import { findProductInCache } from '@/lib/products-cache';
+import { findProductInCache, getCachedProducts } from '@/lib/products-cache';
+import { isTodKey } from '@/lib/tod-client';
+import { isAddyoKey } from '@/lib/addyo-client';
+import { isBlockedProduct } from '@/config/catalog-filter';
 
 export async function GET(
   request: NextRequest,
@@ -10,9 +13,25 @@ export async function GET(
   const resolvedParams = await params;
   const { productKey } = resolvedParams;
 
+  // These suppliers have no detail endpoint: the catalogue entry is the full product.
+  if (isTodKey(productKey) || isAddyoKey(productKey)) {
+    try {
+      const product = (await getCachedProducts()).find((p) => p.productKey === productKey);
+      return product
+        ? NextResponse.json(product)
+        : NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    } catch {
+      return NextResponse.json({ error: 'Failed to fetch product' }, { status: 503 });
+    }
+  }
+
   try {
     const client = getQuantumClient();
     const rawProduct = await client.getProduct(productKey);
+
+    if (rawProduct && isBlockedProduct(rawProduct.name, rawProduct.description)) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
 
     if (rawProduct) {
       const resaleProduct = applyResalePricing(rawProduct);

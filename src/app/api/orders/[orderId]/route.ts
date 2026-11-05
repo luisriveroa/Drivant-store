@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getQuantumClient, QuantumVaultTimeoutError, QuantumVaultApiError } from '@/lib/quantum-client';
+import { getTodOrder, isTodKey } from '@/lib/tod-client';
 
 export async function GET(
   request: NextRequest,
@@ -8,6 +9,10 @@ export async function GET(
   try {
     const resolvedParams = await params;
     const { orderId } = resolvedParams;
+
+    if (isTodKey(orderId)) {
+      return NextResponse.json(await getTodOrder(orderId));
+    }
 
     const client = getQuantumClient();
     const order = await client.getOrder(orderId);

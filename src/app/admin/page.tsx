@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Wallet,
@@ -20,10 +20,17 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import { toast } from 'sonner';
-import type { BalanceResponse, OrderSummaryItem, DeliveredItem } from '@/lib/types';
+import type { OrderSummaryItem, DeliveredItem } from '@/lib/types';
+
+interface SupplierBalance {
+  name: string;
+  available: boolean;
+  balance: number | null;
+  currency: string;
+}
 
 export default function AdminPage() {
-  const [balance, setBalance] = useState<BalanceResponse | null>(null);
+  const [balance, setBalance] = useState<SupplierBalance[]>([]);
   const [orders, setOrders] = useState<OrderSummaryItem[]>([]);
   const [summary, setSummary] = useState<{ totalOrders: number; totalSpent: number } | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
@@ -36,6 +43,8 @@ export default function AdminPage() {
   const [isFulfilling, setIsFulfilling] = useState(false);
   const [fulfilledItems, setFulfilledItems] = useState<DeliveredItem[]>([]);
   const [fulfillWarning, setFulfillWarning] = useState('');
+  // Same key for re-sends of one attempt, so a lost response can't charge twice.
+  const purchaseAttempt = useRef<{ summary: string; key: string } | null>(null);
 
   const fetchBalance = useCallback(async () => {
     setIsLoadingBalance(true);
@@ -43,7 +52,7 @@ export default function AdminPage() {
       const res = await fetch('/api/balance');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setBalance(data);
+      setBalance(data.suppliers || []);
     } catch {
       toast.error('Failed to load wallet balance');
     } finally {
@@ -97,6 +106,10 @@ export default function AdminPage() {
     const summary = `${quantity} x ${productKey.trim()}${variantKey.trim() ? ` / ${variantKey.trim()}` : ''}`;
     if (!window.confirm(`¿Comprar ${summary}? Se descuenta de tu saldo de QuantumVault.`)) return;
 
+    if (purchaseAttempt.current?.summary !== summary) {
+      purchaseAttempt.current = { summary, key: crypto.randomUUID() };
+    }
+
     setIsFulfilling(true);
     setFulfilledItems([]);
     setFulfillWarning('');
@@ -108,6 +121,7 @@ export default function AdminPage() {
           productKey: productKey.trim(),
           variantKey: variantKey.trim() || undefined,
           quantity,
+          idempotencyKey: purchaseAttempt.current.key,
         }),
       });
       const data = await res.json();
@@ -118,8 +132,12 @@ export default function AdminPage() {
         fetchOrders();
         return;
       }
-      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      if (!res.ok) {
+        purchaseAttempt.current = null;
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
 
+      purchaseAttempt.current = null;
       setFulfilledItems(data.order?.items || []);
       if (data.order?.partial) {
         setFulfillWarning(`Entrega parcial: ${data.order.fulfilled} de ${data.order.requested} unidades.`);
@@ -186,11 +204,19 @@ export default function AdminPage() {
               <Wallet className="h-5 w-5" />
             </div>
           </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-gray-900">
-              {isLoadingBalance ? '...' : `$${(balance?.balance ?? 0).toFixed(2)}`}
-            </span>
-            <span className="text-xs text-gray-400">{balance?.currency || 'USD'}</span>
+          <div className="mt-3 space-y-1">
+            {isLoadingBalance && balance.length === 0 ? (
+              <span className="text-3xl font-extrabold text-gray-900">...</span>
+            ) : (
+              balance.map((b) => (
+                <div key={b.name} className="flex items-baseline justify-between gap-2">
+                  <span className="text-xs text-gray-500">{b.name}</span>
+                  <span className="text-lg font-extrabold text-gray-900">
+                    {b.available ? `$${(b.balance ?? 0).toFixed(2)}` : 'No disponible'}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
           <p className="mt-2 text-xs text-gray-400">
             Available to auto-fulfill customer orders
