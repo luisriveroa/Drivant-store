@@ -23,6 +23,15 @@ function stripDecoration(name: string): string {
 }
 
 function parseWarranty(text: string): string | null {
+  const span = text.match(/(\d+)[\s-]*(day|hour|month|year)s?[\s-]*warranty/i);
+  if (span) {
+    const unit = span[2].toLowerCase();
+    const [one, many] =
+      unit === 'day' ? ['día', 'días'] : unit === 'hour' ? ['hora', 'horas'] : unit === 'month' ? ['mes', 'meses'] : ['año', 'años'];
+    return plural(span[1], one, many);
+  }
+  if (/login warranty only/i.test(text)) return 'Solo del acceso';
+  if (/redeem warranty only/i.test(text)) return 'Solo para el canje';
   const days = text.match(/\(?\bW(\d+)(D|H)\)?/i) || text.match(/(\d+)\s*(d|days?)\s*warranty/i) || text.match(/warranty\s*(\d+)\s*(d)\b/i);
   if (days) {
     const n = days[1];
@@ -64,6 +73,27 @@ function parseDelivery(text: string): string | null {
 export function translateTerms(text: string): string {
   return stripDecoration(text)
     .replace(/\[key\]\s*/gi, '')
+    .replace(/\(([^()]*\b)?\d+[\s-]*(day|hour|month|year)s?[\s-]*(login )?warranty[^()]*\)/gi, ' ')
+    .replace(/\((login|redeem|subscription) warranty only\)|\(subscription warranty\)/gi, ' ')
+    .replace(/\(full warranty[^()]*\)|\(no warranty[^()]*\)/gi, ' ')
+    .replace(/\(#\d+\)/g, '')
+    .replace(/\bready hotmail account\b/gi, 'cuenta lista en Hotmail')
+    .replace(/\bready (gmail|admin) account\b/gi, 'cuenta lista $1')
+    .replace(/\bmade to order\b/gi, 'bajo pedido')
+    .replace(/\bpre-?order\b/gi, 'por encargo')
+    .replace(/\bnot a trial\b/gi, 'no es prueba')
+    .replace(/\btrial account\b/gi, 'cuenta de prueba')
+    .replace(/\bown card needed\b/gi, 'requiere tu tarjeta')
+    .replace(/\bno card required\b/gi, 'sin tarjeta')
+    .replace(/\bredeem (code|key|link)\b/gi, 'código de canje')
+    .replace(/\bcoupon for new accounts\b/gi, 'cupón para cuentas nuevas')
+    .replace(/\bnew account\b/gi, 'cuenta nueva')
+    .replace(/\bshared account\b/gi, 'cuenta compartida')
+    .replace(/\b(official |genuine )?(retail |online |license )*key\b/gi, (m) => (/genuine|official/i.test(m) ? 'clave original' : 'clave'))
+    .replace(/\bpermanent\b/gi, 'permanente')
+    .replace(/\b1 device\b/gi, '1 dispositivo')
+    .replace(/\b(\d+) (members|users|people)\b/gi, '$1 personas')
+    .replace(/\bwith\b/gi, 'con')
     .replace(/(\d)(months?|mon|years?|yrs?)\b/gi, '$1 $2')
     .replace(/\(\s*W\d+[DH]\s*\)|\bW\d+[DH]\b/gi, '')
     .replace(/\(?\b(includes\s+)?\d+\s*(d|days?)\s+warranty\)?/gi, '')

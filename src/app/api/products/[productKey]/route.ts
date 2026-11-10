@@ -4,7 +4,8 @@ import { applyResalePricing } from '@/lib/pricing';
 import { findProductInCache, getCachedProducts } from '@/lib/products-cache';
 import { isTodKey } from '@/lib/tod-client';
 import { isAddyoKey } from '@/lib/addyo-client';
-import { isBlockedProduct } from '@/config/catalog-filter';
+import { isListable } from '@/config/catalog-filter';
+import { isEklasKey } from '@/lib/eklas-client';
 
 export async function GET(
   request: NextRequest,
@@ -14,7 +15,7 @@ export async function GET(
   const { productKey } = resolvedParams;
 
   // These suppliers have no detail endpoint: the catalogue entry is the full product.
-  if (isTodKey(productKey) || isAddyoKey(productKey)) {
+  if (isTodKey(productKey) || isAddyoKey(productKey) || isEklasKey(productKey)) {
     try {
       const product = (await getCachedProducts()).find((p) => p.productKey === productKey);
       return product
@@ -29,7 +30,7 @@ export async function GET(
     const client = getQuantumClient();
     const rawProduct = await client.getProduct(productKey);
 
-    if (rawProduct && isBlockedProduct(rawProduct.name, rawProduct.description)) {
+    if (rawProduct && !isListable(rawProduct.name, rawProduct.description)) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 

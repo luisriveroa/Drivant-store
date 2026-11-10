@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getQuantumClient, QuantumVaultTimeoutError, QuantumVaultApiError } from '@/lib/quantum-client';
 import { getTodOrder, isTodKey } from '@/lib/tod-client';
+import { getEklasOrder, isEklasKey } from '@/lib/eklas-client';
 
 export async function GET(
   request: NextRequest,
@@ -9,6 +10,10 @@ export async function GET(
   try {
     const resolvedParams = await params;
     const { orderId } = resolvedParams;
+
+    if (isEklasKey(orderId)) {
+      return NextResponse.json(await getEklasOrder(orderId));
+    }
 
     if (isTodKey(orderId)) {
       return NextResponse.json(await getTodOrder(orderId));

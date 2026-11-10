@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getQuantumClient, QuantumVaultTimeoutError, QuantumVaultApiError } from '@/lib/quantum-client';
 import { isTodKey, purchaseTod } from '@/lib/tod-client';
 import { isAddyoKey, purchaseAddyo } from '@/lib/addyo-client';
+import { isEklasKey, purchaseEklas } from '@/lib/eklas-client';
 import { getCachedProducts } from '@/lib/products-cache';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (
       Array.isArray(body.items) &&
-      body.items.some((i: any) => isTodKey(String(i?.productKey)) || isAddyoKey(String(i?.productKey)))
+      body.items.some((i: any) => /^(tod|addyo|eklas)--/.test(String(i?.productKey)))
     ) {
       return NextResponse.json({ error: 'These products must be bought one at a time' }, { status: 400 });
     }
@@ -27,6 +28,31 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({
         success: true,
         order: { requested, fulfilled: requested, totalCharged: item.price, currency: 'USD', items: [item] },
+      });
+    }
+
+    if (typeof body.productKey === 'string' && isEklasKey(body.productKey)) {
+      const products = await getCachedProducts();
+      if (!products.some((p) => p.productKey === body.productKey)) {
+        return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+      }
+
+      const quantity = Math.min(50, Math.max(1, parseInt(body.quantity || 1, 10)));
+      const { pending, item, requested } = await purchaseEklas(body.productKey, quantity, body.idempotencyKey);
+
+      if (pending) {
+        return NextResponse.json(
+          {
+            status: 'pending',
+            message: `El proveedor entrega este pedido manualmente (${item.orderId}). Búscalo en el historial antes de volver a comprar.`,
+          },
+          { status: 202 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        order: { requested, fulfilled: requested, totalCharged: item.price, currency: 'USDT', items: [item] },
       });
     }
 

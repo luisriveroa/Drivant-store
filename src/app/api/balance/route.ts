@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getQuantumClient } from '@/lib/quantum-client';
 import { getTodBalance, isTodConfigured } from '@/lib/tod-client';
 import { getAddyoBalance, isAddyoConfigured } from '@/lib/addyo-client';
+import { getEklasBalance, isEklasConfigured } from '@/lib/eklas-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,7 @@ export async function GET(): Promise<NextResponse> {
     { name: 'QuantumVault', fetch: () => getQuantumClient().getBalance() },
     ...(isTodConfigured() ? [{ name: 'TOD Gifts', fetch: getTodBalance }] : []),
     ...(isAddyoConfigured() ? [{ name: 'Addyocart', fetch: getAddyoBalance }] : []),
+    ...(isEklasConfigured() ? [{ name: 'Eklas', fetch: getEklasBalance }] : []),
   ];
 
   const results = await Promise.allSettled(suppliers.map((s) => s.fetch()));

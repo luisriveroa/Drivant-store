@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getQuantumClient } from '@/lib/quantum-client';
 import { getTodOrders, isTodConfigured } from '@/lib/tod-client';
+import { getEklasOrders, isEklasConfigured } from '@/lib/eklas-client';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const limit = new URL(request.url).searchParams.get('limit');
 
-  const [quantumVault, tod] = await Promise.allSettled([
+  const [quantumVault, tod, eklas] = await Promise.allSettled([
     getQuantumClient().getOrders(limit ? { limit: parseInt(limit, 10) } : undefined),
     isTodConfigured() ? getTodOrders() : Promise.resolve([]),
+    isEklasConfigured() ? getEklasOrders() : Promise.resolve([]),
   ]);
 
   if (quantumVault.status === 'rejected' && tod.status === 'rejected') {
@@ -16,7 +18,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const quantumVaultOrders = quantumVault.status === 'fulfilled' ? quantumVault.value : null;
-  const todOrders = tod.status === 'fulfilled' ? tod.value : [];
+  const todOrders = [
+    ...(tod.status === 'fulfilled' ? tod.value : []),
+    ...(eklas.status === 'fulfilled' ? eklas.value : []),
+  ];
 
   const orders = [...(quantumVaultOrders?.orders || []), ...todOrders].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()

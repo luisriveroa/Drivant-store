@@ -167,6 +167,7 @@ Next.js está optimizado de forma nativa para Vercel:
    - `ADMIN_PASSWORD`: contraseña larga para `/admin` (usuario `admin`). Sin ella, el panel queda bloqueado.
    - `NEXT_PUBLIC_WHATSAPP_NUMBER` y `NEXT_PUBLIC_TELEGRAM_USERNAME` (opcional): cambian los canales de pedidos definidos en `src/app/cart/page.tsx`.
    - `ADDYO_API_KEY` (opcional): activa Addyocart como proveedor.
+   - `EKLAS_API_KEY` (opcional): activa Eklas como proveedor.
    - `TOD_API_KEY` (opcional): activa TOD Gifts como segundo proveedor. Qué se publica se define en `src/config/catalog-filter.ts`.
    - `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` (opcional): aviso de cada pedido nuevo con el total verificado por el servidor.
 5. Haz clic en **Deploy**. En menos de 2 minutos tu tienda estará online en `https://tu-tienda.vercel.app`.

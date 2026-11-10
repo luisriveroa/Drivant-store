@@ -9,8 +9,9 @@
 import { getQuantumClient } from '@/lib/quantum-client';
 import { getTodProducts, isTodConfigured } from '@/lib/tod-client';
 import { getAddyoProducts, isAddyoConfigured } from '@/lib/addyo-client';
+import { getEklasProducts, isEklasConfigured } from '@/lib/eklas-client';
 import { applyResalePricingBulk } from '@/lib/pricing';
-import { isBlockedProduct } from '@/config/catalog-filter';
+import { isListable } from '@/config/catalog-filter';
 import type { ApiProduct, ResaleProduct } from '@/lib/types';
 
 const CACHE_TTL_MS = 60 * 1000; // 60 seconds fresh cache
@@ -28,6 +29,7 @@ const suppliers: Array<{ id: string; enabled: () => boolean; fetch: () => Promis
   { id: 'quantumvault', enabled: () => true, fetch: fetchQuantumVaultProducts },
   { id: 'tod', enabled: isTodConfigured, fetch: getTodProducts },
   { id: 'addyo', enabled: isAddyoConfigured, fetch: getAddyoProducts },
+  { id: 'eklas', enabled: isEklasConfigured, fetch: getEklasProducts },
 ];
 
 const catalogBySupplier = new Map<string, ResaleProduct[]>();
@@ -58,7 +60,7 @@ export async function getCachedProducts(): Promise<ResaleProduct[]> {
         const { id } = active[index];
         if (result.status === 'fulfilled') {
           anySucceeded = true;
-          const listable = result.value.filter((p) => !isBlockedProduct(p.name, p.description));
+          const listable = result.value.filter((p) => isListable(p.name, p.description));
           if (listable.length > 0) catalogBySupplier.set(id, applyResalePricingBulk(listable));
         } else {
           firstError = firstError ?? result.reason;
