@@ -196,6 +196,8 @@ export interface ResaleProduct {
   brandId: string;
   brandName: string;
   logo: string | null;
+  brandColor: string;
+  brandAbout: string;
   info: ProductInfo;
   searchText: string;
   variants: ResaleVariant[];

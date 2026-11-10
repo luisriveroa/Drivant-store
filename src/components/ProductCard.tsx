@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, Clock, ShieldCheck } from 'lucide-react';
-import ProductBrandIcon from '@/components/ProductBrandIcon';
+import ProductCover from '@/components/ProductCover';
 import type { ResaleProduct } from '@/lib/types';
 
 interface ProductCardProps {
@@ -16,18 +16,23 @@ export default function ProductCard({ product }: ProductCardProps) {
   const hasStock = product.inStock;
   const min = product.resaleMinPrice ?? product.minPrice ?? 0;
   const max = product.resaleMaxPrice ?? product.maxPrice ?? 0;
-  const priceDisplay = min === max ? `$${min.toFixed(2)}` : `Desde $${min.toFixed(2)}`;
+  const priceDisplay = min === max ? `US$ ${min.toFixed(2)}` : `Desde US$ ${min.toFixed(2)}`;
   const { duration, warranty } = product.info;
 
   return (
     <Link
       href={`/product/${encodeURIComponent(product.productKey)}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-colors duration-200 hover:border-lime-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 dark:border-gray-800 dark:bg-gray-900"
+      className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white p-4 shadow-sm transition-colors duration-200 hover:border-lime-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-400 dark:border-gray-800 dark:bg-gray-900"
     >
-      {/* Brand logo and availability */}
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <ProductBrandIcon logo={product.logo} brandName={product.brandName} size="lg" />
-        <div className="flex items-center gap-1.5 rounded-full border border-gray-100 bg-gray-50 px-2.5 py-1 text-[11px] font-bold dark:border-gray-800 dark:bg-gray-800/80">
+      {/* Cover with availability */}
+      <div className="relative mb-4">
+        <ProductCover
+          logo={product.logo}
+          brandName={product.brandName}
+          brandColor={product.brandColor}
+          label={duration === NOT_CONFIRMED ? undefined : duration}
+        />
+        <div className="absolute right-2 top-2 flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold shadow-sm dark:bg-gray-950/80">
           <span className={`h-2 w-2 rounded-full ${hasStock ? 'bg-lime-500' : 'bg-red-500'}`} />
           <span className={hasStock ? 'text-gray-900 dark:text-gray-100' : 'text-red-600 dark:text-red-400'}>
             {hasStock ? 'Disponible' : 'Agotado'}
@@ -61,10 +66,9 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       <div className="flex items-end justify-between border-t border-gray-100 pt-3 dark:border-gray-800">
         <div>
-          <span className="text-[10px] font-bold uppercase text-gray-500 dark:text-gray-400">Precio</span>
+          <span className="text-[10px] font-bold uppercase text-gray-500 dark:text-gray-400">Precio en dólares</span>
           <p className="text-xl font-extrabold tracking-tight text-gray-950 dark:text-white">
             {priceDisplay}
-            <span className="ml-1 text-xs font-normal text-gray-500 dark:text-gray-400">USD</span>
           </p>
         </div>
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 text-gray-700 transition-colors group-hover:bg-lime-400 group-hover:text-black dark:bg-gray-800 dark:text-gray-200">

@@ -61,6 +61,8 @@ function presentProduct(product: ApiProduct) {
     brandId: described.brandId,
     brandName: described.brandName,
     logo: described.logo,
+    brandColor: described.brandColor,
+    brandAbout: described.brandAbout,
     info: described.info,
     searchText: described.searchText,
     deliverFields: product.deliverFields?.map((f) => ({ name: f.name, label: FIELD_LABELS[f.name] || f.label })),

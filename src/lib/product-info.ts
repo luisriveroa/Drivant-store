@@ -3,6 +3,7 @@
 // structure for every product in the store
 // ============================================================
 import { PRODUCT_DETAILS } from '@/data/product-details';
+import { BRAND_PROFILES, DEFAULT_BRAND_COLOR } from '@/data/brand-profiles';
 import { detectBrand, getCategoryName } from '@/lib/brands';
 import { normalizeForSearch } from '@/lib/search';
 import type { ProductInfo } from '@/lib/types';
@@ -195,12 +196,22 @@ function buildName(rawName: string): string {
   return name.startsWith(label) ? name : name.replace(/^./, (c) => c.toUpperCase());
 }
 
+/** One-line summary from what the name states, for products without a written description. */
+function describeFromFacts(brandName: string, duration: string | null, delivery: string | null): string {
+  const parts = [`Plan de ${brandName}`];
+  if (duration) parts.push(duration === 'De por vida' ? 'de por vida' : `por ${duration}`);
+  const sentence = `${parts.join(' ')}.`;
+  return delivery ? `${sentence} Entrega: ${delivery.toLowerCase()}.` : sentence;
+}
+
 export interface DescribedProduct {
   name: string;
   summary: string;
   brandId: string;
   brandName: string;
   logo: string | null;
+  brandColor: string;
+  brandAbout: string;
   categoryId: string;
   categoryName: string;
   info: ProductInfo;
@@ -242,7 +253,9 @@ export function describeProduct(
 
   return {
     name,
-    summary: detail.summary || `Producto digital de ${brand.name}.`,
+    summary: detail.summary || describeFromFacts(brand.name, duration, delivery),
+    brandColor: BRAND_PROFILES[brand.id]?.color || DEFAULT_BRAND_COLOR,
+    brandAbout: BRAND_PROFILES[brand.id]?.about || '',
     brandId: brand.id,
     brandName: brand.name,
     logo: brand.logo ? `/brands/${brand.logo}` : null,

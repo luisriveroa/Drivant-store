@@ -99,7 +99,6 @@ export const BRANDS: Brand[] = [
   { id: 'miro', name: 'Miro', categoryId: 'productividad', match: /\bmiro\b/i, logo: 'miro.svg' },
   { id: 'readwise', name: 'Readwise', categoryId: 'productividad', match: /readwise/i, logo: 'readwise.png' },
   { id: 'jam', name: 'Jam', categoryId: 'productividad', match: /\bjam\b/i, logo: 'jam.png' },
-  { id: 'mercury', name: 'Mercury', categoryId: 'productividad', match: /mercury/i, logo: 'mercury.png' },
   { id: 'brainfm', name: 'Brain.fm', categoryId: 'productividad', match: /brain\.fm/i, logo: 'brainfm.png' },
   { id: 'headspace', name: 'Headspace', categoryId: 'productividad', match: /headspace/i, logo: 'headspace.svg' },
   { id: 'linkedin', name: 'LinkedIn Premium', categoryId: 'productividad', match: /linkedin/i, logo: 'linkedin.svg' },

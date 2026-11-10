@@ -14,6 +14,8 @@ export default function HomePage() {
   const [products, setProducts] = useState<ResaleProduct[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedBrand, setSelectedBrand] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'recommended' | 'price-asc' | 'price-desc' | 'name'>('recommended');
+  const [onlyAvailable, setOnlyAvailable] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -66,20 +68,27 @@ export default function HomePage() {
     const result = searchedProducts.filter(
       (p) =>
         (selectedCategory === 'all' || p.categoryId === selectedCategory) &&
-        (selectedBrand === 'all' || p.brandId === selectedBrand)
+        (selectedBrand === 'all' || p.brandId === selectedBrand) &&
+        (!onlyAvailable || p.inStock)
     );
-    // Available products first, in a stable order
-    return [...result].sort(
-      (a, b) => Number(b.inStock) - Number(a.inStock) || a.brandName.localeCompare(b.brandName) || a.minPrice - b.minPrice
-    );
-  }, [searchedProducts, selectedCategory, selectedBrand]);
+    const byStock = (a: ResaleProduct, b: ResaleProduct) => Number(b.inStock) - Number(a.inStock);
+    const sorters: Record<typeof sortBy, (a: ResaleProduct, b: ResaleProduct) => number> = {
+      // Available products first, grouped by brand
+      recommended: (a, b) => byStock(a, b) || a.brandName.localeCompare(b.brandName) || a.minPrice - b.minPrice,
+      'price-asc': (a, b) => byStock(a, b) || a.minPrice - b.minPrice,
+      'price-desc': (a, b) => byStock(a, b) || b.minPrice - a.minPrice,
+      name: (a, b) => a.name.localeCompare(b.name, 'es'),
+    };
+    return [...result].sort(sorters[sortBy]);
+  }, [searchedProducts, selectedCategory, selectedBrand, onlyAvailable, sortBy]);
 
-  const hasActiveFilters = Boolean(searchQuery) || selectedCategory !== 'all' || selectedBrand !== 'all';
+  const hasActiveFilters = Boolean(searchQuery) || selectedCategory !== 'all' || selectedBrand !== 'all' || onlyAvailable;
 
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedCategory('all');
     setSelectedBrand('all');
+    setOnlyAvailable(false);
   };
 
   const handleSelectCategory = (categoryId: string) => {
@@ -162,10 +171,34 @@ export default function HomePage() {
             onSelectCategory={handleSelectCategory}
             onSelectBrand={setSelectedBrand}
           />
-          <div className="mt-5 flex items-center justify-between border-t border-gray-200 pt-4 dark:border-gray-800">
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-4 dark:border-gray-800">
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-300" aria-live="polite">
-              {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'}
+              {filteredProducts.length} {filteredProducts.length === 1 ? 'producto' : 'productos'} · precios en dólares (USD)
             </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={onlyAvailable}
+                  onChange={(e) => setOnlyAvailable(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 accent-lime-500"
+                />
+                Solo disponibles
+              </label>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                Ordenar
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                  className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-lime-400 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                >
+                  <option value="recommended">Recomendados</option>
+                  <option value="price-asc">Precio: menor a mayor</option>
+                  <option value="price-desc">Precio: mayor a menor</option>
+                  <option value="name">Nombre</option>
+                </select>
+              </label>
+            </div>
             {hasActiveFilters && (
               <button
                 type="button"

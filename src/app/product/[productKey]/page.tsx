@@ -21,6 +21,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import ProductBrandIcon from '@/components/ProductBrandIcon';
+import ProductCover from '@/components/ProductCover';
 import { toast } from 'sonner';
 import type { ResaleProduct, ResaleVariant } from '@/lib/types';
 
@@ -131,6 +132,14 @@ export default function ProductDetailPage({
         <div className="grid grid-cols-1 gap-10 md:grid-cols-[1fr_340px]">
           {/* Product info: same structure for every product */}
           <div className="min-w-0">
+            <div className="mb-6">
+              <ProductCover
+                logo={product.logo}
+                brandName={product.brandName}
+                brandColor={product.brandColor}
+                size="lg"
+              />
+            </div>
             <div className="mb-4 flex items-center gap-3">
               <ProductBrandIcon logo={product.logo} brandName={product.brandName} size="lg" />
               <div>
@@ -221,6 +230,13 @@ export default function ProductDetailPage({
               </p>
             )}
 
+            {product.brandAbout && (
+              <section className="mb-6">
+                <h2 className={sectionTitle}>Sobre {product.brandName}</h2>
+                <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">{product.brandAbout}</p>
+              </section>
+            )}
+
             <section>
               <h2 className={sectionTitle}>Cómo comprar</h2>
               <ol className="list-decimal space-y-1.5 pl-5 text-sm text-gray-700 marker:font-bold dark:text-gray-300">
@@ -257,7 +273,7 @@ export default function ProductDetailPage({
                         <span className="text-sm font-semibold text-gray-900 dark:text-white">{v.name}</span>
                         <span className="text-right">
                           <span className="block text-base font-bold text-gray-900 dark:text-white">
-                            ${v.price.toFixed(2)}
+                            US$ {v.price.toFixed(2)}
                           </span>
                           <span className="text-[11px] text-gray-500 dark:text-gray-400">
                             {v.inStock ? 'Disponible' : 'Agotado'}
@@ -296,13 +312,10 @@ export default function ProductDetailPage({
             </div>
 
             <div className="mb-6 flex items-baseline justify-between border-t border-gray-100 pt-4 dark:border-gray-800">
-              <span className="text-sm text-gray-600 dark:text-gray-300">Total</span>
-              <div className="text-right">
-                <span className="text-3xl font-extrabold text-gray-900 dark:text-white">
-                  ${(currentPrice * quantity).toFixed(2)}
-                </span>
-                <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">USD</span>
-              </div>
+              <span className="text-sm text-gray-600 dark:text-gray-300">Total en dólares</span>
+              <span className="text-3xl font-extrabold text-gray-900 dark:text-white">
+                US$ {(currentPrice * quantity).toFixed(2)}
+              </span>
             </div>
 
             <div className="space-y-3">
