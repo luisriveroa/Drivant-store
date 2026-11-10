@@ -122,15 +122,10 @@ Accede al panel de administración en [http://localhost:3000/admin](http://local
 
 Puedes ajustar los márgenes de dos formas:
 
-1. **Automáticamente por rango de precio** en `MARGIN_TIERS` de `src/config/margins.ts`:
-   ```typescript
-   export const MARGIN_TIERS: MarginTier[] = [
-     { upTo: 1, percent: 100 },        // menos de $1: +100%
-     { upTo: 5, percent: 50 },         // $1 a $4.99: +50%
-     { upTo: 20, percent: 35 },        // $5 a $19.99: +35%
-     { upTo: Infinity, percent: 25 },  // $20 o más: +25%
-   ];
-   ```
+1. **Automáticamente** en `src/config/margins.ts`:
+   - Si el producto tiene un precio oficial en `OFFICIAL_PRICES`, se vende un 15% por debajo (`OFFICIAL_DISCOUNT_PERCENT`). Ejemplo: ChatGPT Plus 1 mes, oficial $20 → $16.90.
+   - Si no, se aplica `MARGIN_TIERS` sobre el costo: menos de $1 → +200%, $1 a $3 → +150%, $3 a $10 → +80%, $10 a $30 → +50% y más → +30%. Ejemplo: costo $1 → $2.90.
+   - Nunca se vende con menos de un 15% de ganancia sobre el costo (`MIN_MARGIN_PERCENT`). Los precios desde $2 terminan en .90.
 
 2. **Por producto específico** (tiene prioridad sobre los rangos) en `src/config/margins.ts`:
    ```typescript

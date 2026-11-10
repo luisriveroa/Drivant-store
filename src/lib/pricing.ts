@@ -3,7 +3,7 @@
 // ============================================================
 import type { MarginConfig, ApiProduct, ResaleProduct, ResaleVariant } from '@/lib/types';
 import {
-  getTieredPrice,
+  computeResalePrice,
   productMarginOverrides,
   MIN_RESALE_PRICE,
   PRICE_DECIMALS,
@@ -30,12 +30,14 @@ export function calculateResalePrice(basePrice: number, margin: MarginConfig): n
 }
 
 /**
- * Final customer price for a supplier price: product override first, then tiers.
+ * Final customer price for a supplier price: product override first, then the
+ * official-price and margin rules in src/config/margins.ts.
+ * `name` is the supplier's name, including the variant's when there is one.
  */
-export function getResalePrice(productKey: string, basePrice: number): number {
+export function getResalePrice(productKey: string, basePrice: number, name: string): number {
   const override = productMarginOverrides.find((o) => o.productKey === productKey);
   if (override) return calculateResalePrice(basePrice, override.margin);
-  const price = Math.max(getTieredPrice(basePrice), MIN_RESALE_PRICE);
+  const price = Math.max(computeResalePrice(name, basePrice), MIN_RESALE_PRICE);
   return parseFloat(price.toFixed(PRICE_DECIMALS));
 }
 
@@ -77,7 +79,7 @@ export function applyResalePricing(product: ApiProduct): ResaleProduct {
     const resaleVariants: ResaleVariant[] = variants.map((v) => ({
       variantKey: v.key,
       name: translateTerms(v.name),
-      price: getResalePrice(product.productKey, v.price),
+      price: getResalePrice(product.productKey, v.price, `${product.name} ${v.name}`),
       stock: v.stock,
       unlimited: v.unlimited,
       inStock: v.inStock,
@@ -105,7 +107,7 @@ export function applyResalePricing(product: ApiProduct): ResaleProduct {
 
   // Simple product (no variants)
   const basePrice = product.price ?? 0;
-  const resalePrice = getResalePrice(product.productKey, basePrice);
+  const resalePrice = getResalePrice(product.productKey, basePrice, product.name);
 
   return {
     ...presentProduct(product),
